@@ -5,54 +5,72 @@ const path = require('path');
 
 let books = [];
 
-// Авторизация пользователя
-router.post('/login', (req, res) => {
-  res.status(201).json({ id: 1, mail: "test@mail.ru" });
-});
-
-// Получить все книги
+// Просмотр списка всех книг
 router.get('/', (req, res) => {
-  res.json(books);
+  res.render('index', { books });
 });
 
-// Получить книгу по ID
-router.get('/:id', (req, res) => {
-  const book = books.find(b => b.id === req.params.id);
-  if (book) {
-    res.json(book);
-  } else {
-    res.status(404).send('Книга не найдена');
-  }
+// Страница создания книги
+router.get('/create', (req, res) => {
+  res.render('create');
 });
 
-// Создать книгу с загрузкой файла
+// Создание книги с загрузкой файла
 router.post('/', upload.single('fileBook'), (req, res) => {
   const newBook = {
     ...req.body,
     id: (books.length + 1).toString(),
-    fileBook: req.file ? req.file.path : ''
+    fileCover: req.file ? req.file.filename : '',
+    fileBook: req.file ? req.file.filename : '',
+    favorite: req.body.favorite === 'on'
   };
   books.push(newBook);
-  res.status(201).json(newBook);
+  res.redirect('/books');
 });
 
-// Редактировать книгу по ID
-router.put('/:id', (req, res) => {
-  const bookIndex = books.findIndex(b => b.id === req.params.id);
-  if (bookIndex !== -1) {
-    books[bookIndex] = { ...books[bookIndex], ...req.body };
-    res.json(books[bookIndex]);
+// Просмотр конкретной книги
+router.get('/:id', (req, res) => {
+  const book = books.find(b => b.id === req.params.id);
+  if (book) {
+    res.render('view', { book });
   } else {
     res.status(404).send('Книга не найдена');
   }
 });
 
-// Удалить книгу по ID
-router.delete('/:id', (req, res) => {
+// Страница редактирования книги
+router.get('/:id/edit', (req, res) => {
+  const book = books.find(b => b.id === req.params.id);
+  if (book) {
+    res.render('update', { book });
+  } else {
+    res.status(404).send('Книга не найдена');
+  }
+});
+
+// Редактирование книги по ID
+router.post('/:id', upload.single('fileBook'), (req, res) => {
+  const bookIndex = books.findIndex(b => b.id === req.params.id);
+  if (bookIndex !== -1) {
+    books[bookIndex] = {
+      ...books[bookIndex],
+      ...req.body,
+      fileCover: req.file ? req.file.filename : books[bookIndex].fileCover,
+      fileBook: req.file ? req.file.filename : books[bookIndex].fileBook,
+      favorite: req.body.favorite === 'on'
+    };
+    res.redirect(`/books/${req.params.id}`);
+  } else {
+    res.status(404).send('Книга не найдена');
+  }
+});
+
+// Удаление книги по ID
+router.post('/:id?_method=DELETE', (req, res) => {
   const bookIndex = books.findIndex(b => b.id === req.params.id);
   if (bookIndex !== -1) {
     books.splice(bookIndex, 1);
-    res.send('ok');
+    res.redirect('/books');
   } else {
     res.status(404).send('Книга не найдена');
   }
@@ -62,7 +80,7 @@ router.delete('/:id', (req, res) => {
 router.get('/:id/download', (req, res) => {
   const book = books.find(b => b.id === req.params.id);
   if (book && book.fileBook) {
-    res.download(path.resolve(book.fileBook));
+    res.download(path.resolve('uploads', book.fileBook));
   } else {
     res.status(404).send('Файл книги не найден');
   }
