@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/upload');
+const upload = require('../../../middleware/upload');
 const path = require('path');
+const axios = require('axios');
 
 let books = [];
 
@@ -29,10 +30,15 @@ router.post('/', upload.single('fileBook'), (req, res) => {
 });
 
 // Просмотр конкретной книги
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   const book = books.find(b => b.id === req.params.id);
   if (book) {
-    res.render('view', { book });
+    // Увеличение счетчика просмотров
+    await axios.post(`http://counter-service:4000/counter/${book.id}/incr`);
+    // Получение текущего значения счетчика
+    const response = await axios.get(`http://counter-service:4000/counter/${book.id}`);
+    const viewCount = response.data.count;
+    res.render('view', { book, viewCount });
   } else {
     res.status(404).send('Книга не найдена');
   }

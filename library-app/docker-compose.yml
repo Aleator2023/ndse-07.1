@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  library-service:
+    build: ./library-service
+    ports:
+      - "3000:3000"
+    depends_on:
+      - counter-service
+    networks:
+      - library-net
+
+  counter-service:
+    build: ./counter-service
+    ports:
+      - "4000:4000"
+    volumes:
+      - counter-data:/usr/src/app/src
+    networks:
+      - library-net
+
+networks:
+  library-net:
+
+volumes:
+  counter-data:

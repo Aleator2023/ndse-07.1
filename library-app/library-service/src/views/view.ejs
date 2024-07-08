@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр книги</title>
+</head>
+<body>
+    <h1><%= book.title %></h1>
+    <p><%= book.description %></p>
+    <p>Авторы: <%= book.authors %></p>
+    <p>Избранное: <%= book.favorite ? 'Да' : 'Нет' %></p>
+    <p>Обложка: <img src="/uploads/<%= book.fileCover %>" alt="<%= book.title %>"></p>
+    <p>Книга: <a href="/books/<%= book.id %>/download">Скачать</a></p>
+    <p>Количество просмотров: <%= viewCount %></p> <!-- Добавлено для отображения счетчика просмотров -->
+    <a href="/books/<%= book.id %>/edit">Редактировать</a>
+    <form action="/books/<%= book.id %>?_method=DELETE" method="post">
+        <button type="submit">Удалить</button>
+    </form>
+    <a href="/books">Назад к списку книг</a>
+</body>
+</html>
