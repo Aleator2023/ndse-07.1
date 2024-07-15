@@ -6,18 +6,26 @@ const axios = require('axios');
 
 let books = [];
 
+// Middleware для проверки аутентификации
+function isAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect('/api/user/login');
+}
+
 // Просмотр списка всех книг
-router.get('/', (req, res) => {
+router.get('/', isAuthenticated, (req, res) => {
   res.render('index', { books });
 });
 
 // Страница создания книги
-router.get('/create', (req, res) => {
+router.get('/create', isAuthenticated, (req, res) => {
   res.render('create');
 });
 
 // Создание книги с загрузкой файла
-router.post('/', upload.single('fileBook'), (req, res) => {
+router.post('/', isAuthenticated, upload.single('fileBook'), (req, res) => {
   const newBook = {
     ...req.body,
     id: (books.length + 1).toString(),
@@ -30,22 +38,27 @@ router.post('/', upload.single('fileBook'), (req, res) => {
 });
 
 // Просмотр конкретной книги
-router.get('/:id', async (req, res) => {
+router.get('/:id', isAuthenticated, async (req, res) => {
   const book = books.find(b => b.id === req.params.id);
   if (book) {
-    // Увеличение счетчика просмотров
-    await axios.post(`http://counter-service:4000/counter/${book.id}/incr`);
-    // Получение текущего значения счетчика
-    const response = await axios.get(`http://counter-service:4000/counter/${book.id}`);
-    const viewCount = response.data.count;
-    res.render('view', { book, viewCount });
+    try {
+      // Увеличение счетчика просмотров
+      await axios.post(`http://counter-service:4000/counter/${book.id}/incr`);
+      // Получение текущего значения счетчика
+      const response = await axios.get(`http://counter-service:4000/counter/${book.id}`);
+      const viewCount = response.data.count;
+      res.render('view', { book, viewCount });
+    } catch (error) {
+      console.error('Error fetching counter service:', error);
+      res.status(500).send('Ошибка сервиса счетчика');
+    }
   } else {
     res.status(404).send('Книга не найдена');
   }
 });
 
 // Страница редактирования книги
-router.get('/:id/edit', (req, res) => {
+router.get('/:id/edit', isAuthenticated, (req, res) => {
   const book = books.find(b => b.id === req.params.id);
   if (book) {
     res.render('update', { book });
@@ -55,7 +68,7 @@ router.get('/:id/edit', (req, res) => {
 });
 
 // Редактирование книги по ID
-router.post('/:id', upload.single('fileBook'), (req, res) => {
+router.post('/:id', isAuthenticated, upload.single('fileBook'), (req, res) => {
   const bookIndex = books.findIndex(b => b.id === req.params.id);
   if (bookIndex !== -1) {
     books[bookIndex] = {
@@ -72,7 +85,7 @@ router.post('/:id', upload.single('fileBook'), (req, res) => {
 });
 
 // Удаление книги по ID
-router.post('/:id?_method=DELETE', (req, res) => {
+router.delete('/:id', isAuthenticated, (req, res) => {
   const bookIndex = books.findIndex(b => b.id === req.params.id);
   if (bookIndex !== -1) {
     books.splice(bookIndex, 1);
@@ -83,7 +96,7 @@ router.post('/:id?_method=DELETE', (req, res) => {
 });
 
 // Скачивание файла книги по ID
-router.get('/:id/download', (req, res) => {
+router.get('/:id/download', isAuthenticated, (req, res) => {
   const book = books.find(b => b.id === req.params.id);
   if (book && book.fileBook) {
     res.download(path.resolve('uploads', book.fileBook));

@@ -9,7 +9,16 @@
   <h1>All Books</h1>
   <ul>
     <% books.forEach(book => { %>
-      <li><a href="/books/<%= book.id %>"><%= book.title %></a></li>
+      <li>
+        <a href="/books/<%= book.id %>"><%= book.title %></a>
+        <a href="/books/<%= book.id %>/edit">(Edit)</a>
+        <form action="/books/<%= book.id %>?_method=DELETE" method="POST" style="display:inline;">
+          <button type="submit">Delete</button>
+        </form>
+        <% if (book.fileBook) { %>
+          <a href="/books/<%= book.id %>/download">Download</a>
+        <% } %>
+      </li>
     <% }); %>
   </ul>
   <a href="/books/create">Create a new book</a>
