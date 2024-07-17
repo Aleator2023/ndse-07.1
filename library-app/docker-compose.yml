@@ -6,8 +6,10 @@ services:
       - "3000:3000"
     depends_on:
       - counter-service
-    networks:
-      - library-net
+      - mongodb
+    environment:
+      - PORT=3000 
+      - MONGO_URL=mongodb://mongodb:27017/library
 
   counter-service:
     build: ./counter-service
@@ -15,11 +17,20 @@ services:
       - "4000:4000"
     volumes:
       - counter-data:/usr/src/app/src
-    networks:
-      - library-net
+    environment:
+      - PORT=4000
 
-networks:
-  library-net:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
 
 volumes:
   counter-data:
+  mongo-data:
+
+networks:
+  default:
+    driver: bridge

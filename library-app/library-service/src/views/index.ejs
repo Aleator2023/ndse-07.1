@@ -3,24 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>All Books</title>
+  <title>Books</title>
 </head>
 <body>
-  <h1>All Books</h1>
+  <h1>Books</h1>
   <ul>
     <% books.forEach(book => { %>
       <li>
-        <a href="/books/<%= book.id %>"><%= book.title %></a>
-        <a href="/books/<%= book.id %>/edit">(Edit)</a>
-        <form action="/books/<%= book.id %>?_method=DELETE" method="POST" style="display:inline;">
-          <button type="submit">Delete</button>
-        </form>
-        <% if (book.fileBook) { %>
-          <a href="/books/<%= book.id %>/download">Download</a>
-        <% } %>
+        <a href="/books/<%= book._id %>"><%= book.title %></a>
       </li>
-    <% }); %>
+    <% }) %>
   </ul>
   <a href="/books/create">Create a new book</a>
+  <a href="/api/user/logout">Logout</a>
 </body>
 </html>

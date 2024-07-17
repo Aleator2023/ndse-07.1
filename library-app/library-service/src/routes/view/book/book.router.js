@@ -1,10 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../../../middleware/upload');
 const path = require('path');
 const axios = require('axios');
+const Book = require('../../../models/Book');
+const Comment = require('../../../models/Comment'); 
+const multer = require('multer');
 
-let books = [];
+// Настройка хранения файлов с использованием multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // уникальное имя файла
+  }
+});
+
+const upload = multer({ storage: storage });
 
 // Middleware для проверки аутентификации
 function isAuthenticated(req, res, next) {
@@ -15,7 +27,8 @@ function isAuthenticated(req, res, next) {
 }
 
 // Просмотр списка всех книг
-router.get('/', isAuthenticated, (req, res) => {
+router.get('/', isAuthenticated, async (req, res) => {
+  const books = await Book.find().exec();
   res.render('index', { books });
 });
 
@@ -25,21 +38,20 @@ router.get('/create', isAuthenticated, (req, res) => {
 });
 
 // Создание книги с загрузкой файла
-router.post('/', isAuthenticated, upload.single('fileBook'), (req, res) => {
-  const newBook = {
+router.post('/', isAuthenticated, upload.single('fileBook'), async (req, res) => {
+  const newBook = new Book({
     ...req.body,
-    id: (books.length + 1).toString(),
     fileCover: req.file ? req.file.filename : '',
     fileBook: req.file ? req.file.filename : '',
     favorite: req.body.favorite === 'on'
-  };
-  books.push(newBook);
+  });
+  await newBook.save();
   res.redirect('/books');
 });
 
 // Просмотр конкретной книги
 router.get('/:id', isAuthenticated, async (req, res) => {
-  const book = books.find(b => b.id === req.params.id);
+  const book = await Book.findById(req.params.id).exec();
   if (book) {
     try {
       // Увеличение счетчика просмотров
@@ -47,7 +59,11 @@ router.get('/:id', isAuthenticated, async (req, res) => {
       // Получение текущего значения счетчика
       const response = await axios.get(`http://counter-service:4000/counter/${book.id}`);
       const viewCount = response.data.count;
-      res.render('view', { book, viewCount });
+
+      // Загрузка комментариев
+      const comments = await Comment.find({ bookId: book._id }).populate('userId').exec();
+
+      res.render('view', { book, viewCount, comments });
     } catch (error) {
       console.error('Error fetching counter service:', error);
       res.status(500).send('Ошибка сервиса счетчика');
@@ -58,8 +74,8 @@ router.get('/:id', isAuthenticated, async (req, res) => {
 });
 
 // Страница редактирования книги
-router.get('/:id/edit', isAuthenticated, (req, res) => {
-  const book = books.find(b => b.id === req.params.id);
+router.get('/:id/edit', isAuthenticated, async (req, res) => {
+  const book = await Book.findById(req.params.id).exec();
   if (book) {
     res.render('update', { book });
   } else {
@@ -68,16 +84,16 @@ router.get('/:id/edit', isAuthenticated, (req, res) => {
 });
 
 // Редактирование книги по ID
-router.post('/:id', isAuthenticated, upload.single('fileBook'), (req, res) => {
-  const bookIndex = books.findIndex(b => b.id === req.params.id);
-  if (bookIndex !== -1) {
-    books[bookIndex] = {
-      ...books[bookIndex],
-      ...req.body,
-      fileCover: req.file ? req.file.filename : books[bookIndex].fileCover,
-      fileBook: req.file ? req.file.filename : books[bookIndex].fileBook,
-      favorite: req.body.favorite === 'on'
-    };
+router.put('/:id', isAuthenticated, upload.single('fileBook'), async (req, res) => {
+  const book = await Book.findById(req.params.id).exec();
+  if (book) {
+    book.title = req.body.title || book.title;
+    book.description = req.body.description || book.description;
+    book.authors = req.body.authors || book.authors;
+    book.fileCover = req.file ? req.file.filename : book.fileCover;
+    book.fileBook = req.file ? req.file.filename : book.fileBook;
+    book.favorite = req.body.favorite === 'on';
+    await book.save();
     res.redirect(`/books/${req.params.id}`);
   } else {
     res.status(404).send('Книга не найдена');
@@ -85,19 +101,14 @@ router.post('/:id', isAuthenticated, upload.single('fileBook'), (req, res) => {
 });
 
 // Удаление книги по ID
-router.delete('/:id', isAuthenticated, (req, res) => {
-  const bookIndex = books.findIndex(b => b.id === req.params.id);
-  if (bookIndex !== -1) {
-    books.splice(bookIndex, 1);
-    res.redirect('/books');
-  } else {
-    res.status(404).send('Книга не найдена');
-  }
+router.delete('/:id', isAuthenticated, async (req, res) => {
+  await Book.findByIdAndDelete(req.params.id).exec();
+  res.redirect('/books');
 });
 
 // Скачивание файла книги по ID
-router.get('/:id/download', isAuthenticated, (req, res) => {
-  const book = books.find(b => b.id === req.params.id);
+router.get('/:id/download', isAuthenticated, async (req, res) => {
+  const book = await Book.findById(req.params.id).exec();
   if (book && book.fileBook) {
     res.download(path.resolve('uploads', book.fileBook));
   } else {

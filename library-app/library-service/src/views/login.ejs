@@ -1,8 +1,8 @@
+<!-- login.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
 </head>
 <body>
@@ -13,26 +13,31 @@
     <% if (message.success) { %>
         <p style="color: green;"><%= message.success %></p>
     <% } %>
-    <form method="post" action="/api/user/login">
-        <label for="login-username">Username:</label>
-        <input type="text" name="username" id="login-username" autocomplete="username" required>
-        <br>
-        <label for="login-password">Password:</label>
-        <input type="password" name="password" id="login-password" autocomplete="current-password" required>
-        <br>
+    <form action="/api/user/login" method="post">
+        <div>
+            <label for="username">Username:</label>
+            <input type="text" name="username" id="username" required>
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" name="password" id="password" required>
+        </div>
         <button type="submit">Login</button>
     </form>
-    <h1>Sign Up</h1>
-    <form method="post" action="/api/user/signup">
-        <label for="signup-username">Username:</label>
-        <input type="text" name="username" id="signup-username" autocomplete="username" required>
-        <br>
-        <label for="signup-password">Password:</label>
-        <input type="password" name="password" id="signup-password" autocomplete="new-password" required>
-        <br>
-        <label for="signup-confirm-password">Confirm Password:</label>
-        <input type="password" name="confirmPassword" id="signup-confirm-password" autocomplete="new-password" required>
-        <br>
+    <h2>Sign Up</h2>
+    <form action="/api/user/signup" method="post">
+        <div>
+            <label for="username">Username:</label>
+            <input type="text" name="username" id="username" required>
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" name="password" id="password" required>
+        </div>
+        <div>
+            <label for="confirmPassword">Confirm Password:</label>
+            <input type="password" name="confirmPassword" id="confirmPassword" required>
+        </div>
         <button type="submit">Sign Up</button>
     </form>
 </body>
