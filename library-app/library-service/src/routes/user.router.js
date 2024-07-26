@@ -1,8 +1,13 @@
+// library-app/library-service/src/routes/user.router.js
+
 const express = require('express');
 const passport = require('passport');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 const User = require('../../src/models/User'); 
+
+const secretKey = 'yourSecretKey'; // Секретный ключ для подписи токенов
 
 // Страница входа
 router.get('/login', (req, res) => {

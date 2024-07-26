@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= book.title %></title>
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
   <h1><%= book.title %></h1>
@@ -24,8 +25,8 @@
     <% } %>
   </ul>
 
-  <form action="/books/<%= book._id %>/comment" method="post">
-    <textarea name="content" placeholder="Ваш комментарий"></textarea>
+  <form id="commentForm">
+    <textarea id="commentContent" name="content" placeholder="Ваш комментарий" required></textarea>
     <button type="submit">Добавить комментарий</button>
   </form>
 
@@ -34,5 +35,38 @@
     <button type="submit">Удалить</button>
   </form>
   <a href="/api/user/logout">Выйти</a>
+
+  <script>
+    const socket = io();
+
+const commentForm = document.getElementById('commentForm');
+const commentContent = document.getElementById('commentContent');
+const commentsUl = document.getElementById('comments');
+
+commentForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  const content = commentContent.value;
+  const bookId = '<%= book._id %>';
+  const userId = '<%= user._id %>';
+
+  // Логирование перед отправкой
+  console.log('Отправка нового комментария:', { bookId, userId, content });
+
+  // Отправка нового комментария на сервер через Socket.IO
+  socket.emit('newComment', { bookId, userId, content });
+
+  commentContent.value = '';
+});
+
+// Обработка новых комментариев от сервера
+socket.on('newComment', (comment) => {
+  console.log('Новый комментарий получен:', comment);
+
+  const commentLi = document.createElement('li');
+  commentLi.innerHTML = `<p><strong>${comment.userId.username}:</strong> ${comment.content}</p>`;
+  commentsUl.appendChild(commentLi);
+});
+  </script>
 </body>
 </html>

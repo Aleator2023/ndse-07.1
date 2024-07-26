@@ -1,6 +1,9 @@
-const mongoose = require('mongoose');
+//l ibrary-app/library-service/src/models/Comment.js
 
-const commentSchema = new mongoose.Schema({
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const commentSchema = new Schema({
   bookId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Book',

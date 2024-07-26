@@ -1,3 +1,5 @@
+// library-service/index.js
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -11,6 +13,8 @@ const flash = require('connect-flash');
 const mongoose = require('mongoose');
 const path = require('path');
 const User = require('./src/models/User');
+const Comment = require('./src/models/Comment'); // Добавление модели комментариев
+const { ensureAuthenticated, isAuthenticated } = require('./src/middleware/auth');
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://mongodb:27017/library';
 
 const app = express();
@@ -20,8 +24,8 @@ const io = socketIo(server);
 const PORT = process.env.PORT || 3000;
 const apiBookRouter = require('./src/routes/api/book/book.router');
 const viewBookRouter = require('./src/routes/view/book/book.router');
-const commentRouter = require('./src/routes/comments.router'); 
-const userRouter = require('./src/routes/user.router'); 
+const commentRouter = require('./src/routes/comments.router');
+const userRouter = require('./src/routes/user.router');
 const { notFound, errorHandler } = require('./src/middleware/errorHandler');
 
 mongoose.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -37,7 +41,7 @@ app.use(passport.session());
 app.use(flash());
 
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'src', 'views')); 
+app.set('views', path.join(__dirname, 'src', 'views'));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -94,22 +98,36 @@ passport.deserializeUser(async function(username, done) {
 
 io.on('connection', (socket) => {
   console.log('A user connected');
+
   socket.on('disconnect', () => {
     console.log('User disconnected');
   });
 
-  socket.on('newComment', (data) => {
-    io.emit('newComment', data);
+  socket.on('newComment', async (data) => {
+    console.log('Новый комментарий получен:', data);
+
+    try {
+      // Сохранение комментария в базе данных
+      const newComment = new Comment({
+        bookId: data.bookId,
+        userId: data.userId,
+        content: data.content
+      });
+      await newComment.save();
+
+      // Получение пользователя для отображения имени
+      const populatedComment = await newComment.populate('userId', 'username').execPopulate();
+
+      console.log('Комментарий успешно сохранен:', populatedComment);
+
+      // Отправка комментария всем подключенным клиентам
+      io.emit('newComment', populatedComment);
+    } catch (error) {
+      console.error('Ошибка при сохранении комментария:', error);
+    }
   });
 });
 
 server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
-
-function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.redirect('/api/user/login');
-}

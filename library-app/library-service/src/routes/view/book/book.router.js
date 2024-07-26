@@ -63,7 +63,7 @@ router.get('/:id', isAuthenticated, async (req, res) => {
       // Загрузка комментариев
       const comments = await Comment.find({ bookId: book._id }).populate('userId').exec();
 
-      res.render('view', { book, viewCount, comments });
+      res.render('view', { book, viewCount, comments, user: req.user });
     } catch (error) {
       console.error('Error fetching counter service:', error);
       res.status(500).send('Ошибка сервиса счетчика');
